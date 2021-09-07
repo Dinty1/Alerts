@@ -24,8 +24,7 @@ import com.discordsrv.alerts.provider.AvatarProvider;
 import com.discordsrv.alerts.provider.PlayerProvider;
 import com.discordsrv.alerts.provider.TimeProvider;
 import github.scarsz.configuralize.DynamicConfig;
-import github.scarsz.discordsrv.DiscordSRV;
-import github.scarsz.discordsrv.dependencies.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -43,15 +42,18 @@ public final class Alerts extends JavaPlugin {
     private PlayerProvider playerProvider;
     private TimeProvider timeProvider;
 
-    private DiscordSRVHook dsrvHook;
+    private DiscordSRVHook discordSRVHook;
+
+    private boolean debug = false;
+
+    public static Alerts getPlugin() {
+        return getPlugin(Alerts.class);
+    }
 
     @Override
     public void onEnable() {
-        if (Bukkit.getPluginManager().getPlugin("DiscordSRV") == null) {
-            // TODO: remove when it's not
-            getLogger().severe("DiscordSRV is required");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+        if (Bukkit.getPluginManager().getPlugin("DiscordSRV") != null) {
+            discordSRVHook = new DiscordSRVHook(this);
         }
 
         config = new DynamicConfig();
@@ -80,7 +82,7 @@ public final class Alerts extends JavaPlugin {
         this.timeProvider = new TimeProvider(this);
 
         if (getServer().getPluginManager().getPlugin("DiscordSRV") != null) {
-            dsrvHook = new DiscordSRVHook(this);
+            discordSRVHook = new DiscordSRVHook(this);
         }
     }
 
@@ -111,8 +113,8 @@ public final class Alerts extends JavaPlugin {
         return timeProvider;
     }
 
-    public Optional<DiscordSRVHook> getDSRVHook() {
-        return Optional.ofNullable(dsrvHook);
+    public Optional<DiscordSRVHook> getDiscordSRVHook() {
+        return Optional.ofNullable(discordSRVHook);
     }
 
     public void info(String message) {
@@ -136,8 +138,16 @@ public final class Alerts extends JavaPlugin {
     }
 
     public void debug(String message) {
-        if (DiscordSRV.config().getIntElse("DebugLevel", 0) > 0) {
+        //if (config.getBoolean("Debug")) {
             getLogger().info("[DEBUG] " + message);
-        }
+        //}
+    }
+
+    public boolean isDiscordSRVHookEnabled() {
+        return discordSRVHook != null;
+    }
+
+    public AlertListener getAlertListener() {
+        return this.listener;
     }
 }

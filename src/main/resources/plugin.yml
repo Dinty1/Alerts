@@ -1,6 +1,7 @@
 name: Alerts
 version: @VERSION@
 main: com.discordsrv.alerts.Alerts
+api-version: 1.17
 # loadbefore so we can be sure that we'll get the ready event
 loadbefore: [DiscordSRV]
 authors: [Scarsz, Vankka]

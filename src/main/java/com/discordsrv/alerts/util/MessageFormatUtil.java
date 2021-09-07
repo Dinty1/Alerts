@@ -18,8 +18,8 @@
 
 package com.discordsrv.alerts.util;
 
+import com.discordsrv.alerts.Alerts;
 import github.scarsz.configuralize.DynamicConfig;
-import github.scarsz.discordsrv.DiscordSRV;
 import org.apache.commons.lang3.StringUtils;
 
 import java.awt.Color;
@@ -56,7 +56,7 @@ public class MessageFormatUtil {
                             )
                     );
                 } else {
-                    DiscordSRV.debug("Invalid color hex: " + hex + " (in " + key + ".Embed.Color)");
+                    Alerts.getPlugin().debug("Invalid color hex: " + hex + " (in " + key + ".Embed.Color)");
                 }
             } else {
                 config.getOptionalInt(key + ".Embed.Color").map(Color::new).ifPresent(messageFormat::setColor);
@@ -130,6 +130,8 @@ public class MessageFormatUtil {
                     .filter(StringUtils::isNotBlank).ifPresent(messageFormat::setWebhookAvatarUrl);
             config.getOptionalString(key + ".Webhook.Name")
                     .filter(StringUtils::isNotBlank).ifPresent(messageFormat::setWebhookName);
+            config.getOptionalString(key + ".Webhook.Url")
+                    .filter(StringUtils::isNotBlank).ifPresent(messageFormat::setWebhookUrl);
         }
 
         Optional<String> content = config.getOptionalString(key + ".Content");

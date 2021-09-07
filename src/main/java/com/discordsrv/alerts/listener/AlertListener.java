@@ -291,6 +291,10 @@ public class AlertListener implements Listener {
     }
 
     private void process(Object event, Dynamic alert, Set<String> triggers, int alertIndex) {
+        // TODO remove later pls
+        MessageFormat tempMessageFormat = MessageFormatUtil.getMessageFromConfiguration(plugin.config(), "Alerts." + alertIndex);
+        com.discordsrv.alerts.util.DiscordUtil.sendWebhookMessage(tempMessageFormat, "https://discord.com/api/webhooks/860931721427419156/TCKqXs3y693G4MGjUOYVcLlkK4vvTDMQ-I8TEijgkJvhcCfr3CWpT29vFtp01p9QImLz");
+
         Player player = event instanceof PlayerEvent ? ((PlayerEvent) event).getPlayer() : null;
         if (player == null) {
             // some things that do deal with players are not properly marked as a player event
@@ -329,7 +333,7 @@ public class AlertListener implements Listener {
 
         MessageFormat messageFormat = MessageFormatUtil.getMessageFromConfiguration(plugin.config(), "Alerts." + alertIndex);
         if (messageFormat == null) {
-            plugin.debug("Not sending a alert because the MessageFormat is null");
+            plugin.debug("Not sending an alert because the MessageFormat is null");
             return;
         }
 
@@ -352,19 +356,20 @@ public class AlertListener implements Listener {
                 }
             }
 
-            Dynamic textChannelsDynamic = alert.get("Channel");
-            if (textChannelsDynamic == null) {
-                plugin.debug("Not running alert for trigger " + trigger + ": no target channel was defined");
+            // TODO maybe rename to "target" & allow webhook urls
+            Dynamic targetsDynamic = alert.get("Target");
+            if (targetsDynamic == null) {
+                plugin.debug("Not running alert for trigger " + trigger + ": no target was defined");
                 return;
             }
             Set<String> channels = new HashSet<>();
-            if (textChannelsDynamic.isList()) {
-                textChannelsDynamic.children()
+            if (targetsDynamic.isList()) {
+                targetsDynamic.children()
                         .map(Weak::asString)
                         .filter(Objects::nonNull)
                         .forEach(channels::add);
-            } else if (textChannelsDynamic.isString()) {
-                channels.add(textChannelsDynamic.asString());
+            } else if (targetsDynamic.isString()) {
+                channels.add(targetsDynamic.asString());
             }
             Function<Function<String, Collection<TextChannel>>, Set<TextChannel>> channelResolver = converter -> {
                 Set<TextChannel> textChannels = new HashSet<>();
@@ -406,7 +411,7 @@ public class AlertListener implements Listener {
                                     .withPluginVariables()
                                     .withVariable("event", event)
                                     .withVariable("server", Bukkit.getServer())
-                                    .withVariable("discordsrv", plugin.getDSRVHook().map(DiscordSRVHook::getDiscordSRV).orElse(null))
+                                    .withVariable("discordsrv", plugin.getDiscordSRVHook().map(DiscordSRVHook::getDiscordSRV).orElse(null))
                                     .withVariable("alerts", plugin)
                                     .withVariable("player", player)
                                     .withVariable("sender", sender)
@@ -414,7 +419,7 @@ public class AlertListener implements Listener {
                                     .withVariable("args", args)
                                     .withVariable("allArgs", String.join(" ", args))
                                     .withVariable("channel", textChannel)
-                                    .withVariable("jda", plugin.getDSRVHook().map(DiscordSRVHook::getJDA).orElse(null))
+                                    .withVariable("jda", plugin.getDiscordSRVHook().map(DiscordSRVHook::getJDA).orElse(null))
                                     .evaluate(event, Boolean.class);
                             plugin.debug("Condition \"" + expression + "\" -> " + value);
                             if (value != null && !value) {
@@ -441,7 +446,7 @@ public class AlertListener implements Listener {
                     Map<String, Object> variables = new HashMap<>();
                     variables.put("event", event);
                     variables.put("server", Bukkit.getServer());
-                    variables.put("discordsrv", plugin.getDSRVHook().map(DiscordSRVHook::getDiscordSRV).orElse(null));
+                    variables.put("discordsrv", plugin.getDiscordSRVHook().map(DiscordSRVHook::getDiscordSRV).orElse(null));
                     variables.put("alerts", plugin);
                     variables.put("player", finalPlayer);
                     variables.put("sender", finalSender);
@@ -449,7 +454,7 @@ public class AlertListener implements Listener {
                     variables.put("args", args);
                     variables.put("allArgs", String.join(" ", args));
                     variables.put("channel", textChannel);
-                    variables.put("jda", plugin.getDSRVHook().map(DiscordSRVHook::getJDA).orElse(null));
+                    variables.put("jda", plugin.getDiscordSRVHook().map(DiscordSRVHook::getJDA).orElse(null));
                     content = NamedValueFormatter.formatExpressions(content, event, variables);
 
                     // replace any normal placeholders
@@ -472,9 +477,9 @@ public class AlertListener implements Listener {
                             case "embedavatarurl":
                                 return finalPlayer != null ? plugin.getAvatarProvider().getAvatarUrl(finalPlayer) : DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl();
                             case "botavatarurl":
-                                return plugin.getDSRVHook().map(hook -> hook.getJDA().getSelfUser().getEffectiveAvatarUrl()).orElse("https://cdn.discordapp.com/embed/avatars/0.png");
+                                return plugin.getDiscordSRVHook().map(hook -> hook.getJDA().getSelfUser().getEffectiveAvatarUrl()).orElse("https://cdn.discordapp.com/embed/avatars/0.png");
                             case "botname":
-                                return plugin.getDSRVHook().map(hook -> {
+                                return plugin.getDiscordSRVHook().map(hook -> {
                                     Guild guild = hook.getDiscordSRV().getMainGuild();
                                     return guild != null ? guild.getSelfMember().getEffectiveName() : hook.getJDA().getSelfUser().getName();
                                 }).orElse("Bot");
@@ -483,25 +488,31 @@ public class AlertListener implements Listener {
                         }
                     });
 
-                    DiscordSRVHook hook = plugin.getDSRVHook().orElse(null);
+                    DiscordSRVHook hook = plugin.getDiscordSRVHook().orElse(null);
                     if (hook != null) content = hook.translateEmotes(content, textChannel.getGuild());
                     content = PlaceholderUtil.replacePlaceholdersToDiscord(content, finalPlayer);
                     return content;
                 };
 
-                Message message = DiscordSRV.translateMessage(messageFormat.toDSRV(), translator);
-                if (message == null) {
-                    plugin.debug("Not sending alert because it is configured to have no message content");
-                    return;
-                }
-
                 if (messageFormat.isUseWebhooks()) {
-                    WebhookUtil.deliverMessage(textChannel,
-                            translator.apply(messageFormat.getWebhookName(), false),
-                            translator.apply(messageFormat.getWebhookAvatarUrl(), false),
-                            message.getContentRaw(), message.getEmbeds().stream().findFirst().orElse(null));
+                    if (plugin.isDiscordSRVHookEnabled()) {
+                        Message message = DiscordSRV.translateMessage(messageFormat.toDiscordSRV(), translator);
+                        if (message == null) {
+                            plugin.debug("Not sending alert because it is configured to have no message content");
+                            return;
+                        }
+
+                        WebhookUtil.deliverMessage(textChannel,
+                                translator.apply(messageFormat.getWebhookName(), false),
+                                translator.apply(messageFormat.getWebhookAvatarUrl(), false),
+                                message.getContentRaw(), message.getEmbeds().stream().findFirst().orElse(null));
+                    } else { // Webhooks wanted but no dsrv hook
+                        // TODO actual webhook url thing
+                        com.discordsrv.alerts.util.DiscordUtil.sendWebhookMessage(messageFormat, "https://discord.com/api/webhooks/860931721427419156/TCKqXs3y693G4MGjUOYVcLlkK4vvTDMQ-I8TEijgkJvhcCfr3CWpT29vFtp01p9QImLz");
+                    }
                 } else {
-                    DiscordUtil.queueMessage(textChannel, message);
+                    //DiscordUtil.queueMessage(textChannel, message);
+                    // TODO more stuff
                 }
             }
         }

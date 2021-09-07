@@ -22,7 +22,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.MessageEmbed;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.awt.Color;
+import java.awt.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,6 +53,13 @@ public class MessageFormat {
     private boolean useWebhooks;
     private String webhookAvatarUrl;
     private String webhookName;
+    private String webhookUrl;
+
+    public boolean hasEmbed() {
+        return authorName != null || authorUrl != null || authorImageUrl != null
+                || thumbnailUrl != null || title != null || titleUrl != null || description != null
+                || imageUrl != null || fields != null || footerText != null;
+    }
 
     public boolean isAnyContent() {
         return content != null || authorName != null || authorUrl != null || authorImageUrl != null
@@ -60,7 +67,7 @@ public class MessageFormat {
                 || imageUrl != null || fields != null || footerText != null;
     }
 
-    public github.scarsz.discordsrv.objects.MessageFormat toDSRV() {
+    public github.scarsz.discordsrv.objects.MessageFormat toDiscordSRV() {
         List<Field> fields = this.fields;
         return new github.scarsz.discordsrv.objects.MessageFormat(
                 content,

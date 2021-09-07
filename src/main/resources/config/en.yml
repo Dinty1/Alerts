@@ -1,3 +1,4 @@
+AvatarUrl: "https://crafatar.com/avatars/{uuid-nodashes}.png?size={size}&overlay#{texture}"
 # Alerts
 # Allows you to send messages to Discord when a game event happens or a command is executed
 # IMPORTANT: You will need a working knowledge of how Bukkit events work and their properties.

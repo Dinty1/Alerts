@@ -43,6 +43,7 @@ public class DiscordSRVHook implements EventListener {
     }
 
     @Subscribe
+    @SuppressWarnings("unused")
     public void onDiscordSRVReady(DiscordReadyEvent event) {
         DiscordUtil.getJda().addEventListener(this);
     }
